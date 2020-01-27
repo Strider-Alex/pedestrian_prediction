@@ -8,3 +8,5 @@ output/
 *.ipynb
 *.lprof
 env/
+.DS_Store
+.vscode

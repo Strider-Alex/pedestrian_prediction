@@ -65,7 +65,7 @@ def make_stars(g, stars=[], name=None, **extra_settings):
 
 
 def plot_heat_maps(g, traj_or_trajs, occupancy_list, title_list,
-        stars_grid=None, zmin=None, zmax=None, auto_logarithm=True, **kwargs):
+        stars_grid=None, zmin=None, zmax=None, auto_logarithm=True, last_only=False, **kwargs):
     """
     traj_or_trajs: A trajectory (list of state-action pairs), or a list of
         trajectories.
@@ -106,6 +106,9 @@ def plot_heat_maps(g, traj_or_trajs, occupancy_list, title_list,
         data.append(make_stars(g, stars))
         subplot_list.append(data)
 
+    if last_only:
+        subplot_list=[subplot_list[-1]]
+        title_list=[title_list[-1]]
     subplots(subplot_list, title_list, **kwargs)
 
 
@@ -114,9 +117,16 @@ def subplots(subplot_list, title_list, shapes_list=[], title=None,
         **kwargs):
     assert len(subplot_list) == len(title_list), (subplot_list, title_list)
 
-    specs=[ [ {'t':top_padding} ]*len(subplot_list) ]
+    max_col = 4
+    rows = int((len(subplot_list)-1)/max_col)+1
+    cols = min(len(subplot_list),max_col)
+    specs = []
+    if rows == 1:
+        specs=[ [ {'t':top_padding} ]*cols ]
+    else:
+        specs=[ [ {'t':top_padding} ]*cols ] * rows
 
-    fig = tools.make_subplots(rows=1, cols=len(subplot_list),
+    fig = tools.make_subplots(rows=rows, cols=cols,
             subplot_titles=title_list, specs=specs)
     fig['layout'].update(title=title)
     fig['layout'].update(**layout_settings)
@@ -132,14 +142,14 @@ def subplots(subplot_list, title_list, shapes_list=[], title=None,
 
     for i, subplot in enumerate(subplot_list):
         for t in subplot:
-            fig.append_trace(t, 1, i+1)
+            fig.append_trace(t, int(i/max_col)+1, i%max_col+1)
 
     show_fig(fig, save_png, **kwargs)
 
 
 def _make_show_fig():
     uid_pointer = [100]
-    def show_fig(fig, save_png=False, delay=3.2, output_dir="output/"):
+    def show_fig(fig, save_png=False, delay=3.2, output_dir="output/", auto_open=True):
         """
         Compile the plotly figure `fig` into an html file. Optionally, also
         use the web browser to render and save a png.
@@ -151,7 +161,7 @@ def _make_show_fig():
         filename = os.path.join(output_dir, "out{}.html".format(uid))
         imgname = os.path.join(output_dir, "out{}.png".format(uid))
         if not save_png:
-            py.plot(fig, filename=filename)
+            py.plot(fig, filename=filename, auto_open=auto_open)
         else:
             py.plot(fig, filename=filename, image='png', image_filename=imgname,
                 image_width=1400, image_height=750)
